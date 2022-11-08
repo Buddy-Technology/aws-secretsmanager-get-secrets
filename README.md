@@ -59,6 +59,11 @@ Set `parse-json-secrets` to `true` to create environment variables for each key/
 
 Note that if the JSON uses case-sensitive keys such as "name" and "Name", the action will have duplicate name conflicts. In this case, set `parse-json-secrets` to `false` and parse the JSON secret value separately. 
 ​
+- `omit-json-prefix`
+
+(Optional - default false) By default, when `parse-json-secrets` is set to `true`, all key names will be prefixed with the secret name. Set `omit-json-prefix` to false to inject secrets without prefixes. (This is useful for programmatically passing in a suite of environment variables stored as a secret). 
+
+WARNING: This runs a risk of causing collisions between environment variables having the same key name. The action will fail in such cases.
 ### Examples
 ​
 **Example 1: Get secrets by name and by ARN**  
@@ -136,7 +141,36 @@ TEST_SECRET_API_USER: "user"
 TEST_SECRET_API_KEY: "key"
 TEST_SECRET_CONFIG_ACTIVE: "true"
 ```
-
+**Example 4: Parse JSON in secret and omit prefix**  
+The following example creates environment variables by parsing the JSON in the secret without prefixing the key names. 
+​
+```
+- name: Get Secrets by Name and by ARN
+  uses: aws-actions/aws-secretsmanager-get-secrets@v1
+  with:
+    secret-ids: |
+      test/secret
+    parse-json-secrets: true
+    omit-json-prefix: true
+```
+The secret `test/secret` has the following secret value.  
+​
+```
+{
+  "api_user": "user",
+  "api_key": "key",
+  "config": {
+    "active": "true"
+  }
+}
+```
+Environment variables created:  
+​
+```
+API_USER: "user"
+API_KEY: "key"
+CONFIG_ACTIVE: "true"
+```
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
