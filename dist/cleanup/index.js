@@ -19344,7 +19344,7 @@ exports.getSecretValue = getSecretValue;
  * @param parseJsonSecrets: Indicates whether to deserialize JSON secrets
  * @param tempEnvName: If parsing JSON secrets, contains the current name for the env variable
  */
-function injectSecret(secretName, secretValue, parseJsonSecrets, tempEnvName) {
+function injectSecret({ secretName, secretValue, parseJsonSecrets, tempEnvName, omitJsonPrefix, }) {
     let secretsToCleanup = [];
     if (parseJsonSecrets && isJSONString(secretValue)) {
         // Recursively parses json secrets
@@ -19352,8 +19352,12 @@ function injectSecret(secretName, secretValue, parseJsonSecrets, tempEnvName) {
         for (const k in secretMap) {
             const keyValue = typeof secretMap[k] === 'string' ? secretMap[k] : JSON.stringify(secretMap[k]);
             // Append the current key to the name of the env variable
-            const newEnvName = `${tempEnvName || transformToValidEnvName(secretName)}_${transformToValidEnvName(k)}`;
-            secretsToCleanup = [...secretsToCleanup, ...injectSecret(secretName, keyValue, parseJsonSecrets, newEnvName)];
+            const newEnvName = omitJsonPrefix
+                ? `${tempEnvName || transformToValidEnvName(k)}`
+                : `${tempEnvName || transformToValidEnvName(secretName)}_${transformToValidEnvName(k)}`;
+            secretsToCleanup = [...secretsToCleanup, ...injectSecret({
+                    secretName, secretValue: keyValue, parseJsonSecrets, tempEnvName: newEnvName,
+                })];
         }
     }
     else {
