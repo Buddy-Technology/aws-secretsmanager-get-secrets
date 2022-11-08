@@ -36,7 +36,13 @@ const TEST_ARN_INPUT = ENV_NAME_4 + "," + TEST_ARN_1;
 jest.mock('@actions/core', () => {
     return {
         getMultilineInput: jest.fn((name: string, options?: core.InputOptions) =>  [TEST_NAME, TEST_INPUT_3, TEST_ARN_INPUT] ),
-        getBooleanInput: jest.fn((name: string, options?: core.InputOptions) => true),
+        getBooleanInput: jest.fn((name: string, options?: core.InputOptions) => {
+            // ensure this returns false for this test suite
+            if (name === 'omit-json-prefix') {
+                return false;
+            }
+            return true;
+        }),
         setFailed: jest.fn(),
         info: jest.fn(),
         debug: jest.fn(),

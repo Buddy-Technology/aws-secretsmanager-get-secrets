@@ -16,7 +16,7 @@ export async function run(): Promise<void> {
         const client : SecretsManagerClient = new SecretsManagerClient({region: process.env.AWS_DEFAULT_REGION, customUserAgent: "github-action"});
         const secretConfigInputs: string[] = [...new Set(core.getMultilineInput('secret-ids'))];
         const parseJsonSecrets = core.getBooleanInput('parse-json-secrets');
-
+        const omitJsonPrefix = core.getBooleanInput('omit-json-prefix');
         // Get final list of secrets to request
         core.info('Building secrets list...');
         const secretIds: string[] = await buildSecretsList(client, secretConfigInputs);
@@ -41,7 +41,12 @@ export async function run(): Promise<void> {
                     secretAlias = isArn ? secretValueResponse.name : secretId;
                 }
 
-                const injectedSecrets = injectSecret(secretAlias, secretValueResponse.secretValue, parseJsonSecrets);
+                const injectedSecrets = injectSecret({
+                    secretName: secretAlias, 
+                    secretValue: secretValueResponse.secretValue, 
+                    parseJsonSecrets,
+                    omitJsonPrefix,
+                });
                 secretsToCleanup = [...secretsToCleanup, ...injectedSecrets];
             } catch (err) {
                 // Fail action for any error

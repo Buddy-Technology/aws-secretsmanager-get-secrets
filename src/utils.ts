@@ -129,7 +129,19 @@ export async function getSecretValue(client: SecretsManagerClient, secretId: str
  * @param parseJsonSecrets: Indicates whether to deserialize JSON secrets
  * @param tempEnvName: If parsing JSON secrets, contains the current name for the env variable
  */
-export function injectSecret(secretName: string, secretValue: string, parseJsonSecrets: boolean, tempEnvName?: string): string[] {
+export function injectSecret({
+    secretName, 
+    secretValue, 
+    parseJsonSecrets, 
+    tempEnvName,
+    omitJsonPrefix,
+}: {
+    secretName: string, 
+    secretValue: string, 
+    parseJsonSecrets: boolean, 
+    tempEnvName?: string,
+    omitJsonPrefix?: boolean
+}): string[] {
     let secretsToCleanup = [] as string[];
     if(parseJsonSecrets && isJSONString(secretValue)){
         // Recursively parses json secrets
@@ -137,14 +149,16 @@ export function injectSecret(secretName: string, secretValue: string, parseJsonS
 
         for (const k in secretMap) {
             const keyValue = typeof secretMap[k] === 'string' ? secretMap[k] : JSON.stringify(secretMap[k]);
-
             // Append the current key to the name of the env variable
-            const newEnvName = `${tempEnvName || transformToValidEnvName(secretName)}_${transformToValidEnvName(k)}`;
-            secretsToCleanup = [...secretsToCleanup, ...injectSecret(secretName, keyValue, parseJsonSecrets, newEnvName)];
+            const newEnvName = omitJsonPrefix 
+                ? `${tempEnvName || transformToValidEnvName(k)}`
+                : `${tempEnvName || transformToValidEnvName(secretName)}_${transformToValidEnvName(k)}`;
+            secretsToCleanup = [...secretsToCleanup, ...injectSecret({
+                secretName, secretValue: keyValue, parseJsonSecrets, tempEnvName: newEnvName,
+            })];
         }
     } else {
         const envName = tempEnvName ? transformToValidEnvName(tempEnvName) : transformToValidEnvName(secretName);
-
         // Fail the action if this variable name is already in use, or is our cleanup name
         if (process.env[envName] || envName === CLEANUP_NAME){
             throw new Error(`The environment name '${envName}' is already in use. Please use an alias to ensure that each secret has a unique environment name`);
