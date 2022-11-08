@@ -12,6 +12,10 @@ inputs:
     description: '(Optional) If true, JSON secrets will be deserialized, creating a secret environment variable for each key-value pair.'
     required: false
     default: 'false'
+  omit-json-prefix:
+    description: '(Optional) If true, parsed JSON key names will not have the secret name prefixed.'
+    required: false
+    default: 'false'
 runs:
   using: 'node16'
   main: 'dist/index.js'
